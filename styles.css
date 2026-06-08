@@ -180,6 +180,10 @@ body {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  height: 630px;
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
 }
 
 .panel-hdr {
@@ -1625,6 +1629,8 @@ body {
     border-right: none;
     border-bottom: 1px solid var(--border);
     padding-bottom: 12px;
+    height: auto;
+    position: static;
   }
 
   .kpi-row {

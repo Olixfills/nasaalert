@@ -11,9 +11,90 @@ var TYPES = {
 
 var UB = { high: "#E74C3C", medium: "#F5A623", low: "#0E2340" };
 var ALL_LGAS = ["Karu", "Keffi", "Kokona", "Akwanga", "Wamba", "Nasarawa Egon", "Toto", "Nasarawa", "Lafia", "Keana", "Obi", "Awe", "Doma"];
-var reports = [];
-var shiftLog = [];
-var broadcasts = [];
+var reports = [
+  {
+    id: "NS-2026-0899",
+    ch: "WhatsApp",
+    tid: "banditry",
+    type: TYPES.banditry,
+    lga: "Karu",
+    desc: "Suspicious group spotted carrying firearms near Karu market area.",
+    ts: Date.now() - 15 * 60 * 1000,
+    status: "active",
+    anon: true
+  },
+  {
+    id: "NS-2026-0898",
+    ch: "App",
+    tid: "kidnapping",
+    type: TYPES.kidnapping,
+    lga: "Lafia",
+    desc: "Report of armed men blocking the bypass road. Patrol unit response requested.",
+    ts: Date.now() - 35 * 60 * 1000,
+    status: "dispatched",
+    assigned: "Patrol Unit 3",
+    anon: false
+  },
+  {
+    id: "NS-2026-0897",
+    ch: "USSD",
+    tid: "suspicious",
+    type: TYPES.suspicious,
+    lga: "Keffi",
+    desc: "Unidentified drone flying low over residential quarters.",
+    ts: Date.now() - 60 * 60 * 1000,
+    status: "resolved",
+    resolvedAt: Date.now() - 40 * 60 * 1000,
+    anon: true
+  }
+];
+
+var shiftLog = [
+  {
+    ts: Date.now() - 15 * 60 * 1000,
+    icon: "ti-alert-circle",
+    text: "New report: Banditry",
+    sub: "via WhatsApp · Karu · NS-2026-0899",
+    color: TYPES.banditry.c
+  },
+  {
+    ts: Date.now() - 30 * 60 * 1000,
+    icon: "ti-car",
+    text: "Dispatched: Patrol Unit 3",
+    sub: "Kidnapping · Lafia · NS-2026-0898",
+    color: "#3498DB"
+  },
+  {
+    ts: Date.now() - 35 * 60 * 1000,
+    icon: "ti-alert-circle",
+    text: "New report: Kidnapping",
+    sub: "via App · Lafia · NS-2026-0898",
+    color: TYPES.kidnapping.c
+  },
+  {
+    ts: Date.now() - 40 * 60 * 1000,
+    icon: "ti-circle-check",
+    text: "Resolved: Suspicious Movement",
+    sub: "Keffi LGA · NS-2026-0897",
+    color: "#00D084"
+  },
+  {
+    ts: Date.now() - 60 * 60 * 1000,
+    icon: "ti-alert-circle",
+    text: "New report: Suspicious Movement",
+    sub: "via USSD · Keffi · NS-2026-0897",
+    color: TYPES.suspicious.c
+  }
+];
+
+var broadcasts = [
+  {
+    ts: Date.now() - 25 * 60 * 1000,
+    msg: "All units to maintain high alert around Karu axis.",
+    targets: ["All Units", "Karu Div."],
+    priority: "urgent"
+  }
+];
 var rid = 900;
 var soundOn = true;
 var bcPrioSel = "normal";
@@ -727,3 +808,4 @@ setInterval(function () {
 document.getElementById("shift-date-label").textContent = new Date().toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) + " \u00b7 " + getShift() + " Shift";
 initWa();
 updSbars();
+refresh();

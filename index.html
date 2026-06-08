@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="NasaAlert Operations Room v2 - Real-time security incident monitoring dashboard for Nasarawa State Police Command.">
+  <title>NasaAlert OPS Room v2</title>
+  <!-- Font imports -->
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tabler Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Toast Wrap for Notifications -->
+  <div class="toast-wrap" id="toast-wrap"></div>
+
+  <!-- Escalation Modal -->
+  <div class="modal-bg" id="esc-modal">
+    <div class="modal">
+      <div class="modal-title">
+        <i class="ti ti-alert-triangle"></i>ESCALATE TO COMMAND
+      </div>
+      <div class="modal-body">
+        This will immediately notify the Commissioner of Police and the State Security Council. Use only for critical threats.
+      </div>
+      <div class="modal-ref" id="esc-ref">Ref: —</div>
+      <div class="modal-btns">
+        <button class="modal-cancel" onclick="closeEsc()">cancel</button>
+        <button class="modal-confirm" onclick="confirmEsc()">confirm escalation</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Root App Container -->
+  <div class="root">
+    
+    <!-- Top Header Bar -->
+    <div class="hdr">
+      <div class="logo">
+        <div class="logo-icon">
+          <i class="ti ti-shield-check" style="font-size: 22px; color: #060F1C"></i>
+        </div>
+        <div>
+          <div class="logo-text">Nasa<span style="color: var(--green)">Alert</span> <span style="font-size: 13px; color: var(--text3); font-weight: 300">OPS</span></div>
+          <div class="logo-sub">Nasarawa State Police · Operations Room v2</div>
+        </div>
+      </div>
+      
+      <div class="hdr-right">
+        <div style="display: flex; align-items: center; gap: 6px">
+          <div class="live-dot"></div>
+          <span style="font-size: 11px; color: var(--green); font-family: var(--mono)">live</span>
+        </div>
+        <div class="hdr-stat">reports: <span id="h-total">0</span></div>
+        <div class="hdr-stat">active: <span id="h-active" style="color: var(--red)">0</span></div>
+        <div class="hdr-stat">shift: <span id="h-shift">Day</span></div>
+        <div class="hdr-clock" id="dash-clk">--:--:--</div>
+        <button class="ctrl-btn on" id="snd-btn" onclick="toggleSound()">
+          <i class="ti ti-bell" id="snd-icon"></i>
+          <span id="snd-lbl">sound on</span>
+        </button>
+        <button class="ctrl-btn" onclick="exportCSV()"><i class="ti ti-download"></i>CSV</button>
+      </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="main">
+      
+      <!-- Left Reporting Simulator Sidebar Panel -->
+      <div class="submit-panel">
+        <div class="panel-hdr">
+          <div class="panel-title">submit report</div>
+          <div style="font-size: 10px; color: var(--text3); font-family: var(--mono)">*384#</div>
+        </div>
+        
+        <div class="ch-nav">
+          <button class="ch-btn on" id="ctb-ussd" onclick="sc('ussd')"><i class="ti ti-device-mobile"></i>USSD</button>
+          <button class="ch-btn" id="ctb-wa" onclick="sc('wa')"><i class="ti ti-brand-whatsapp"></i>WA</button>
+          <button class="ch-btn" id="ctb-app" onclick="sc('app')"><i class="ti ti-device-mobile-star"></i>App</button>
+        </div>
+
+        <!-- USSD Simulation Panel -->
+        <div class="ch-panel on" id="cp-ussd">
+          <div class="ussd-scr" id="ussd-scr">Welcome to NasaAlert
+Press 1 to Report
+Press 0 to Cancel</div>
+          <div class="ussd-keys">
+            <button class="ukey" onclick="uk('1')">1</button>
+            <button class="ukey" onclick="uk('2')">2</button>
+            <button class="ukey" onclick="uk('3')">3</button>
+            <button class="ukey" onclick="uk('4')">4</button>
+            <button class="ukey" onclick="uk('5')">5</button>
+            <button class="ukey" onclick="uk('6')">6</button>
+            <button class="ukey" onclick="uk('7')">7</button>
+            <button class="ukey" onclick="uk('8')">8</button>
+            <button class="ukey" onclick="uk('9')">9</button>
+            <button class="ukey spec" onclick="uk('*')">*</button>
+            <button class="ukey" onclick="uk('0')">0</button>
+            <button class="ukey spec" onclick="uk('#')">#</button>
+          </div>
+          <div class="ussd-footer">
+            <div id="ussd-link-wrap" style="display: none">
+              <button class="dash-link" onclick="switchDashTab('live')">
+                <i class="ti ti-layout-dashboard"></i>view on dashboard<i class="ti ti-arrow-right"></i>
+              </button>
+            </div>
+            <button class="reset-btn" onclick="resetUssd()">reset session</button>
+          </div>
+        </div>
+
+        <!-- WhatsApp Simulation Panel -->
+        <div class="ch-panel" id="cp-wa">
+          <div class="wa-top">
+            <div class="wa-av"><i class="ti ti-shield-check" style="font-size: 14px; color: #fff"></i></div>
+            <div>
+              <div style="font-size: 12px; font-weight: 600; color: #fff">NasaAlert Bot</div>
+              <div style="font-size: 10px; color: rgba(255,255,255,0.45)">encrypted · anonymous</div>
+            </div>
+            <button onclick="resetWa()" style="margin-left: auto; font-size: 10px; color: rgba(255,255,255,0.4); background: none; border: none; cursor: pointer">reset</button>
+          </div>
+          <div class="wa-feed" id="wa-feed"></div>
+          <div id="wa-link-row" style="display: none; padding: 8px; background: #111B21">
+            <button class="dash-link" onclick="switchDashTab('live')">
+              <i class="ti ti-layout-dashboard"></i>view on dashboard<i class="ti ti-arrow-right"></i>
+            </button>
+          </div>
+          <div class="wa-inp-row" id="wa-inp-row">
+            <input class="wa-inp" id="wa-inp" placeholder="type REPORT…" onkeydown="if(event.key==='Enter')sendWa()">
+            <button class="wa-send" onclick="sendWa()"><i class="ti ti-send"></i></button>
+          </div>
+        </div>
+
+        <!-- App Simulation Panel -->
+        <div class="ch-panel" id="cp-app">
+          <div class="app-inner">
+            <div class="sbars">
+              <div class="sbar" id="sb1"></div>
+              <div class="sbar" id="sb2"></div>
+              <div class="sbar" id="sb3"></div>
+            </div>
+            
+            <div id="ap1">
+              <div style="font-size: 11px; color: var(--text2); margin-bottom: 8px; font-family: var(--cond); text-transform: uppercase">select incident type</div>
+              <div class="type-g">
+                <div class="tc" id="at-kidnapping" onclick="aSelType('kidnapping')"><i class="ti ti-run" style="color: var(--red)"></i><span>kidnapping</span></div>
+                <div class="tc" id="at-banditry" onclick="aSelType('banditry')"><i class="ti ti-bomb" style="color: var(--amber)"></i><span>banditry</span></div>
+                <div class="tc" id="at-farmer_herder" onclick="aSelType('farmer_herder')"><i class="ti ti-flame" style="color: #F1C40F"></i><span>farmer–herder</span></div>
+                <div class="tc" id="at-suspicious" onclick="aSelType('suspicious')"><i class="ti ti-eye" style="color: var(--blue)"></i><span>suspicious</span></div>
+                <div class="tc" id="at-mining" onclick="aSelType('mining')"><i class="ti ti-pickaxe" style="color: #9B59B6"></i><span>mining</span></div>
+                <div class="tc" id="at-other" onclick="aSelType('other')"><i class="ti ti-alert-circle" style="color: #7F8C8D"></i><span>other</span></div>
+              </div>
+              <button class="btn-g" onclick="aGo(2)">next →</button>
+            </div>
+            
+            <div id="ap2" style="display: none">
+              <div class="anon-r">
+                <div>
+                  <div style="font-size: 12px; color: var(--text2)">anonymous</div>
+                  <div style="font-size: 10px; color: var(--text4)">identity protected</div>
+                </div>
+                <div class="tgl" id="a-tgl" onclick="aFlipAnon()">
+                  <div class="tgl-thumb" id="a-tth"></div>
+                </div>
+              </div>
+              <select class="fld" id="a-lga">
+                <option value="">— select LGA —</option>
+                <option>Akwanga</option>
+                <option>Awe</option>
+                <option>Doma</option>
+                <option>Karu</option>
+                <option>Keana</option>
+                <option>Keffi</option>
+                <option>Kokona</option>
+                <option>Lafia</option>
+                <option>Nasarawa Egon</option>
+                <option>Nasarawa</option>
+                <option>Obi</option>
+                <option>Toto</option>
+                <option>Wamba</option>
+              </select>
+              <textarea class="fld-ta" id="a-desc" placeholder="describe what you saw…"></textarea>
+              <button class="btn-back" onclick="aGo(1)">← back</button>
+              <button class="btn-g" onclick="aGo(3)">review</button>
+            </div>
+            
+            <div id="ap3" style="display: none">
+              <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px" id="a-summ"></div>
+              <div style="background: #0A1200; border: 1px solid #1A2800; border-radius: 8px; padding: 8px 12px; font-size: 11px; color: #7A9A00; margin-bottom: 10px; line-height: 1.5; font-family: var(--mono)">
+                <i class="ti ti-lock" style="font-size: 12px; margin-right: 4px"></i>encrypted · identity never disclosed
+              </div>
+              <button class="btn-back" onclick="aGo(2)">← back</button>
+              <button class="btn-g" onclick="aSubmit()">submit securely</button>
+            </div>
+            
+            <div id="ap4" style="display: none" class="conf-wrap">
+              <i class="ti ti-circle-check conf-icon"></i>
+              <div style="font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 4px; font-family: var(--cond)">report submitted</div>
+              <div style="font-size: 11px; color: var(--text4); margin-bottom: 12px; font-family: var(--mono)">identity fully protected</div>
+              <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 12px">
+                <div style="font-size: 10px; color: var(--text4); margin-bottom: 4px; font-family: var(--mono)">tracking ID</div>
+                <div class="conf-id" id="a-track"></div>
+              </div>
+              <button class="dash-link" onclick="switchDashTab('live')" style="margin-bottom: 8px">
+                <i class="ti ti-layout-dashboard"></i>view on dashboard<i class="ti ti-arrow-right"></i>
+              </button>
+              <button onclick="aReset()" style="width: 100%; background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text3); font-size: 12px; padding: 10px; cursor: pointer; font-family: var(--font)">submit another</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Dashboard Panel -->
+      <div class="dash-panel">
+        <div class="dash-tabs">
+          <button class="dtab on" id="dtb-live" onclick="switchDashTab('live')"><i class="ti ti-layout-dashboard" style="font-size: 13px"></i>live dashboard</button>
+          <button class="dtab" id="dtb-map" onclick="switchDashTab('map')"><i class="ti ti-map-2" style="font-size: 13px"></i>threat map</button>
+          <button class="dtab" id="dtb-log" onclick="switchDashTab('log')"><i class="ti ti-clipboard-list" style="font-size: 13px"></i>shift log</button>
+          <button class="dtab" id="dtb-bc" onclick="switchDashTab('bc')"><i class="ti ti-speakerphone" style="font-size: 13px"></i>broadcast</button>
+        </div>
+        
+        <div class="dash-body">
+          
+          <!-- Tab 1: Live Dashboard -->
+          <div class="tab-pane on" id="tp-live">
+            <div id="d-empty" class="empty">
+              <i class="ti ti-radar"></i>
+              <div class="empty-t">operations room standing by</div>
+              <div class="empty-s">no reports yet. submit an incident<br>via USSD, WhatsApp or App.</div>
+            </div>
+            
+            <div id="d-content" style="display: none">
+              <div class="kpi-row">
+                <div class="kpi">
+                  <div class="kpi-l">active alerts</div>
+                  <div class="kpi-v" id="k-active" style="color: var(--red)">0</div>
+                  <div class="kpi-s">awaiting action</div>
+                </div>
+                <div class="kpi">
+                  <div class="kpi-l">total reports</div>
+                  <div class="kpi-v" id="k-total" style="color: var(--green)">0</div>
+                  <div class="kpi-s">all channels</div>
+                </div>
+                <div class="kpi">
+                  <div class="kpi-l">resolved</div>
+                  <div class="kpi-v" id="k-resolved" style="color: var(--blue)">0</div>
+                  <div class="kpi-s">closed incidents</div>
+                </div>
+                <div class="kpi">
+                  <div class="kpi-l">anonymous</div>
+                  <div class="kpi-v" id="k-anon" style="color: var(--amber)">0%</div>
+                  <div class="kpi-s">identity protected</div>
+                </div>
+              </div>
+              
+              <div class="chart-row">
+                <div class="dcard">
+                  <div class="dcard-t"><i class="ti ti-device-mobile"></i>channels &amp; urgency</div>
+                  <div class="seg-row">
+                    <div class="seg-item">
+                      <div class="seg-lbl"><span class="seg-name">USSD</span><span class="seg-val" id="s-ussd" style="color: var(--green)">0</span></div>
+                      <div class="seg-bar"><div class="seg-fill" id="sb-ussd" style="background: var(--green); width: 0%"></div></div>
+                    </div>
+                    <div class="seg-item">
+                      <div class="seg-lbl"><span class="seg-name">WhatsApp</span><span class="seg-val" id="s-wa" style="color: var(--amber)">0</span></div>
+                      <div class="seg-bar"><div class="seg-fill" id="sb-wa" style="background: var(--amber); width: 0%"></div></div>
+                    </div>
+                    <div class="seg-item">
+                      <div class="seg-lbl"><span class="seg-name">App</span><span class="seg-val" id="s-app" style="color: var(--blue)">0</span></div>
+                      <div class="seg-bar"><div class="seg-fill" id="sb-app" style="background: var(--blue); width: 0%"></div></div>
+                    </div>
+                    <div style="margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border)">
+                      <div class="seg-item">
+                        <div class="seg-lbl"><span class="seg-name" style="color: var(--red)">high urgency</span><span class="seg-val" id="s-high" style="color: var(--red)">0</span></div>
+                        <div class="seg-bar"><div class="seg-fill" id="sb-high" style="background: var(--red); width: 0%"></div></div>
+                      </div>
+                      <div class="seg-item" style="margin-top: 8px">
+                        <div class="seg-lbl"><span class="seg-name" style="color: var(--amber)">medium</span><span class="seg-val" id="s-med" style="color: var(--amber)">0</span></div>
+                        <div class="seg-bar"><div class="seg-fill" id="sb-med" style="background: var(--amber); width: 0%"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="dcard">
+                  <div class="dcard-t"><i class="ti ti-chart-donut"></i>incident types</div>
+                  <div class="type-leg" id="type-leg">
+                    <div style="font-size: 11px; color: var(--text3); text-align: center; padding: 24px 0; font-family: var(--mono)">no data</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="chart-row">
+                <div class="dcard">
+                  <div class="dcard-t"><i class="ti ti-map-pin"></i>LGA hotspot ranking</div>
+                  <div id="lga-list">
+                    <div style="font-size: 11px; color: var(--text3); text-align: center; padding: 20px 0; font-family: var(--mono)">no data</div>
+                  </div>
+                </div>
+                
+                <div class="dcard">
+                  <div class="dcard-t"><i class="ti ti-activity"></i>response status</div>
+                  <div class="resp-grid">
+                    <div class="resp-c"><div class="resp-v" id="r-active" style="color: var(--red)">0</div><div class="resp-l">active</div></div>
+                    <div class="resp-c"><div class="resp-v" id="r-dis" style="color: var(--blue)">0</div><div class="resp-l">dispatched</div></div>
+                    <div class="resp-c"><div class="resp-v" id="r-res" style="color: var(--green)">0</div><div class="resp-l">resolved</div></div>
+                    <div class="resp-c"><div class="resp-v" id="r-anon" style="color: var(--amber)">0</div><div class="resp-l">anonymous</div></div>
+                  </div>
+                  <div class="res-pct-row">
+                    <div class="res-lbl"><span>resolution rate</span><span id="res-pct-lbl" style="color: var(--green)">0%</span></div>
+                    <div class="res-bar-wrap"><div class="res-bar-fill" id="res-bar" style="width: 0%"></div></div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="feed-wrap">
+                <div class="feed-hdr">
+                  <div class="feed-title">
+                    <div class="live-dot"></div>live incident feed
+                  </div>
+                  <div class="feed-tools">
+                    <select class="feed-filter" id="feed-filter" onchange="renderFeed()">
+                      <option value="all">all</option>
+                      <option value="active">active</option>
+                      <option value="high">high urgency</option>
+                      <option value="dispatched">dispatched</option>
+                      <option value="resolved">resolved</option>
+                    </select>
+                    <span class="feed-count" id="feed-count">0 reports</span>
+                  </div>
+                </div>
+                <div class="feed-list" id="feed-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Threat Map (SVG layout) -->
+          <div class="tab-pane" id="tp-map">
+            <div class="map-outer">
+              <div class="map-header">
+                <div class="map-title"><i class="ti ti-map-2" style="font-size: 13px; margin-right: 6px"></i>Nasarawa State — LGA Threat Map</div>
+                <div class="map-legend">
+                  <div class="ml-item"><div class="ml-dot" style="background: var(--red)"></div>high</div>
+                  <div class="ml-item"><div class="ml-dot" style="background: var(--amber)"></div>medium</div>
+                  <div class="ml-item"><div class="ml-dot" style="background: var(--border)"></div>clear</div>
+                </div>
+              </div>
+              <svg width="100%" viewBox="0 0 580 250" style="background: #070F1E; display: block">
+                <g id="lga-Karu" onclick="mapClick('Karu')" style="cursor: pointer">
+                  <rect class="lga-poly" x="10" y="10" width="90" height="55" rx="4" />
+                  <text x="55" y="33" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Karu</text>
+                  <text x="55" y="47" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Karu">0</text>
+                </g>
+                <g id="lga-Keffi" onclick="mapClick('Keffi')" style="cursor: pointer">
+                  <rect class="lga-poly" x="105" y="10" width="90" height="55" rx="4" />
+                  <text x="150" y="33" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Keffi</text>
+                  <text x="150" y="47" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Keffi">0</text>
+                </g>
+                <g id="lga-Kokona" onclick="mapClick('Kokona')" style="cursor: pointer">
+                  <rect class="lga-poly" x="200" y="10" width="90" height="55" rx="4" />
+                  <text x="245" y="33" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Kokona</text>
+                  <text x="245" y="47" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Kokona">0</text>
+                </g>
+                <g id="lga-Akwanga" onclick="mapClick('Akwanga')" style="cursor: pointer">
+                  <rect class="lga-poly" x="295" y="10" width="90" height="55" rx="4" />
+                  <text x="340" y="33" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Akwanga</text>
+                  <text x="340" y="47" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Akwanga">0</text>
+                </g>
+                <g id="lga-Wamba" onclick="mapClick('Wamba')" style="cursor: pointer">
+                  <rect class="lga-poly" x="390" y="10" width="90" height="55" rx="4" />
+                  <text x="435" y="33" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Wamba</text>
+                  <text x="435" y="47" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Wamba">0</text>
+                </g>
+                <g id="lga-Nasarawa Egon" onclick="mapClick('Nasarawa Egon')" style="cursor: pointer">
+                  <rect class="lga-poly" x="485" y="10" width="90" height="55" rx="4" />
+                  <text x="530" y="31" text-anchor="middle" font-size="9" fill="#4A7A9B" font-family="sans-serif">Nasarawa</text>
+                  <text x="530" y="43" text-anchor="middle" font-size="9" fill="#4A7A9B" font-family="sans-serif">Egon</text>
+                  <text x="530" y="57" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Nasarawa Egon">0</text>
+                </g>
+                <g id="lga-Toto" onclick="mapClick('Toto')" style="cursor: pointer">
+                  <rect class="lga-poly" x="10" y="70" width="90" height="55" rx="4" />
+                  <text x="55" y="93" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Toto</text>
+                  <text x="55" y="107" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Toto">0</text>
+                </g>
+                <g id="lga-Nasarawa" onclick="mapClick('Nasarawa')" style="cursor: pointer">
+                  <rect class="lga-poly" x="105" y="70" width="90" height="55" rx="4" />
+                  <text x="150" y="93" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Nasarawa</text>
+                  <text x="150" y="107" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Nasarawa">0</text>
+                </g>
+                <g id="lga-Lafia" onclick="mapClick('Lafia')" style="cursor: pointer">
+                  <rect class="lga-poly" x="200" y="70" width="90" height="55" rx="4" />
+                  <text x="245" y="93" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Lafia ★</text>
+                  <text x="245" y="107" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Lafia">0</text>
+                </g>
+                <g id="lga-Keana" onclick="mapClick('Keana')" style="cursor: pointer">
+                  <rect class="lga-poly" x="295" y="70" width="90" height="55" rx="4" />
+                  <text x="340" y="93" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Keana</text>
+                  <text x="340" y="107" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Keana">0</text>
+                </g>
+                <g id="lga-Obi" onclick="mapClick('Obi')" style="cursor: pointer">
+                  <rect class="lga-poly" x="390" y="70" width="90" height="55" rx="4" />
+                  <text x="435" y="93" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Obi</text>
+                  <text x="435" y="107" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Obi">0</text>
+                </g>
+                <g id="lga-Awe" onclick="mapClick('Awe')" style="cursor: pointer">
+                  <rect class="lga-poly" x="485" y="70" width="90" height="55" rx="4" />
+                  <text x="530" y="93" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Awe</text>
+                  <text x="530" y="107" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Awe">0</text>
+                </g>
+                <g id="lga-Doma" onclick="mapClick('Doma')" style="cursor: pointer">
+                  <rect class="lga-poly" x="200" y="130" width="90" height="55" rx="4" />
+                  <text x="245" y="153" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="sans-serif">Doma</text>
+                  <text x="245" y="167" text-anchor="middle" font-size="9" fill="#2A4A6A" font-family="monospace" id="mc-Doma">0</text>
+                </g>
+                <text x="290" y="215" text-anchor="middle" font-size="10" fill="#2A5A7A" font-family="monospace">click an LGA for details · ★ state capital</text>
+                <text x="290" y="230" text-anchor="middle" font-size="10" fill="#4A7A9B" font-family="monospace" id="map-selected-text">select an LGA to view incident breakdown</text>
+              </svg>
+              <div class="map-info">
+                <div class="mi-item">selected: <span id="mi-lga">—</span></div>
+                <div class="mi-item">total: <span id="mi-tot">0</span></div>
+                <div class="mi-item">active: <span id="mi-act">0</span></div>
+                <div class="mi-item">resolved: <span id="mi-res">0</span></div>
+                <div class="mi-item">top type: <span id="mi-type">—</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 3: Shift Log -->
+          <div class="tab-pane" id="tp-log">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px">
+              <div style="font-size: 14px; font-weight: 600; color: var(--text2); font-family: var(--cond); letter-spacing: 0.4px">Shift Activity Log</div>
+              <div style="font-size: 11px; color: var(--text4); font-family: var(--mono)" id="shift-date-label"></div>
+            </div>
+            
+            <div class="shift-stats">
+              <div class="ss-card"><div class="ss-v" id="sl-total" style="color: var(--green)">0</div><div class="ss-l">reports this shift</div></div>
+              <div class="ss-card"><div class="ss-v" id="sl-dispatched" style="color: var(--blue)">0</div><div class="ss-l">dispatched</div></div>
+              <div class="ss-card"><div class="ss-v" id="sl-resolved" style="color: var(--green)">0</div><div class="ss-l">resolved</div></div>
+            </div>
+            
+            <div style="font-size: 11px; color: var(--text3); margin-bottom: 8px; font-family: var(--cond); text-transform: uppercase; letter-spacing: 0.3px">event timeline</div>
+            <div class="log-wrap" id="log-wrap">
+              <div style="text-align: center; padding: 24px; font-size: 11px; color: var(--border); font-family: var(--mono)">no activity yet this shift</div>
+            </div>
+            
+            <div class="export-row">
+              <button class="exp-btn" onclick="exportCSV()"><i class="ti ti-table-export" style="font-size: 14px"></i>export CSV</button>
+              <button class="exp-btn" onclick="exportPrint()"><i class="ti ti-printer" style="font-size: 14px"></i>print report</button>
+            </div>
+          </div>
+
+          <!-- Tab 4: Commander Broadcasts -->
+          <div class="tab-pane" id="tp-bc">
+            <div class="bc-wrap">
+              <div>
+                <div class="bc-label">commander broadcast</div>
+                <textarea class="bc-ta" id="bc-msg" placeholder="type operational message to units…"></textarea>
+              </div>
+              <div>
+                <div class="bc-label">send to</div>
+                <div class="bc-targets">
+                  <div class="bc-tgt on" data-t="All Units" onclick="bcToggle(this)">All Units</div>
+                  <div class="bc-tgt" data-t="Karu Div." onclick="bcToggle(this)">Karu Div.</div>
+                  <div class="bc-tgt" data-t="Lafia HQ" onclick="bcToggle(this)">Lafia HQ</div>
+                  <div class="bc-tgt" data-t="Keffi Div." onclick="bcToggle(this)">Keffi Div.</div>
+                  <div class="bc-tgt" data-t="Mobile Unit" onclick="bcToggle(this)">Mobile Unit</div>
+                  <div class="bc-tgt" data-t="Intel Section" onclick="bcToggle(this)">Intel Section</div>
+                </div>
+              </div>
+              <div>
+                <div class="bc-label">priority level</div>
+                <div class="bc-priority">
+                  <div class="bc-prio" id="bp-urgent" onclick="bcPrio('urgent')">&#x1F534; URGENT</div>
+                  <div class="bc-prio sel-a" id="bp-normal" onclick="bcPrio('normal')">&#x1F7E1; URGENT NORMAL</div>
+                  <div class="bc-prio" id="bp-info" onclick="bcPrio('info')">&#x1F7E2; OPERATIONAL INFO</div>
+                </div>
+              </div>
+              <button class="bc-send" onclick="sendBroadcast()"><i class="ti ti-speakerphone" style="font-size: 14px; margin-right: 6px"></i>BROADCAST TO UNITS</button>
+              <div>
+                <div class="bc-label" style="margin-bottom: 8px">broadcast history</div>
+                <div class="bc-feed" id="bc-feed">
+                  <div style="text-align: center; padding: 20px; font-size: 11px; color: var(--border); font-family: var(--mono)">no broadcasts sent this shift</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App logic integration -->
+  <script src="app.js"></script>
+</body>
+</html>
